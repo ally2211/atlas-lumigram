@@ -1,22 +1,23 @@
 import { View, TextInput, Button, Alert } from "react-native";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebaseConfig";
 import { useState, useContext } from "react";
 import { Redirect, useRouter } from "expo-router";
 import { AuthContext } from "../../context/AuthContext";
 import { Header } from "../../components/Header";
 
-export default function Login() {
+export default function Signup() {
     const { user } = useContext(AuthContext);
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
 
     if (user) {
         return <Redirect href="/(tabs)" />;
     }
 
-    const login = async () => {
+    const signup = async () => {
         if (!email.trim() || !email.includes("@")) {
             Alert.alert("Error", "Enter a valid email");
             return;
@@ -25,17 +26,19 @@ export default function Login() {
             Alert.alert("Error", "Enter a password");
             return;
         }
+        if (password !== confirmPassword) {
+            Alert.alert("Error", "Passwords do not match");
+            return;
+        }
+        if (password.length < 6) {
+            Alert.alert("Error", "Password must be at least 6 characters");
+            return;
+        }
 
         try {
-            const userCredential = await signInWithEmailAndPassword(
-                auth,
-                email.trim(),
-                password
-            );
-            console.log("SUCCESS:", userCredential.user);
+            await createUserWithEmailAndPassword(auth, email.trim(), password);
         } catch (error: any) {
-            Alert.alert("Login failed", error.message);
-            console.log(error.code);
+            Alert.alert("Signup failed", error.message);
         }
     };
 
@@ -56,11 +59,18 @@ export default function Login() {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
+                style={{ borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 8 }}
+            />
+            <TextInput
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
                 style={{ borderWidth: 1, padding: 10, marginBottom: 20, borderRadius: 8 }}
             />
-            <Button title="Login" onPress={login} />
+            <Button title="Create Account" onPress={signup} />
             <View style={{ marginTop: 16 }}>
-                <Button title="Create Account" onPress={() => router.push("/(auth)/signup")} />
+                <Button title="Already have an account? Log in" onPress={() => router.push("/(auth)/login")} />
             </View>
             </View>
         </View>

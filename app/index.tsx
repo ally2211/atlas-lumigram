@@ -2,6 +2,7 @@ import { Redirect } from "expo-router";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { Header } from "../components/Header";
 
 export default function Index() {
   const { user, loading } = useContext(AuthContext);
@@ -10,7 +11,10 @@ export default function Index() {
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#000" />
+        <Header showLogout={false} />
+        <View style={styles.spinner}>
+          <ActivityIndicator size="large" color="#000" />
+        </View>
       </View>
     );
   }
@@ -25,8 +29,11 @@ export default function Index() {
 const styles = StyleSheet.create({
   loading: {
     flex: 1,
+    backgroundColor: "#fff",
+  },
+  spinner: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
   },
 });
