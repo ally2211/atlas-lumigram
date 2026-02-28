@@ -1,6 +1,6 @@
 import { View, Image, Pressable, StyleSheet } from "react-native";
 import { signOut } from "firebase/auth";
-import { auth } from "../firebaseConfig";
+import { auth } from "../firebase/firebaseConfig";
 import { Ionicons } from "@expo/vector-icons";
 
 type HeaderProps = {

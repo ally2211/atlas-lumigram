@@ -1,6 +1,6 @@
 import { View, TextInput, Button, Alert } from "react-native";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../firebaseConfig";
+import { auth } from "../../firebase/firebaseConfig";
 import { useState, useContext } from "react";
 import { Redirect, useRouter } from "expo-router";
 import { AuthContext } from "../../context/AuthContext";
@@ -46,32 +46,32 @@ export default function Signup() {
         <View style={{ flex: 1 }}>
             <Header showLogout={false} />
             <View style={{ flex: 1, justifyContent: "center", padding: 20 }}>
-            <TextInput
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                style={{ borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 8 }}
-            />
-            <TextInput
-                placeholder="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                style={{ borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 8 }}
-            />
-            <TextInput
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-                style={{ borderWidth: 1, padding: 10, marginBottom: 20, borderRadius: 8 }}
-            />
-            <Button title="Create Account" onPress={signup} />
-            <View style={{ marginTop: 16 }}>
-                <Button title="Already have an account? Log in" onPress={() => router.push("/(auth)/login")} />
-            </View>
+                <TextInput
+                    placeholder="Email"
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    style={{ borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 8 }}
+                />
+                <TextInput
+                    placeholder="Password"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    style={{ borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 8 }}
+                />
+                <TextInput
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry
+                    style={{ borderWidth: 1, padding: 10, marginBottom: 20, borderRadius: 8 }}
+                />
+                <Button title="Create Account" onPress={signup} />
+                <View style={{ marginTop: 16 }}>
+                    <Button title="Already have an account? Log in" onPress={() => router.push("/(auth)/login")} />
+                </View>
             </View>
         </View>
     );
