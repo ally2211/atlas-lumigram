@@ -8,7 +8,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Platform,
 } from "react-native";
+
+const showAlert = (title: string, message?: string) =>
+  Platform.OS === "web" ? window.alert([title, message].filter(Boolean).join("\n")) : Alert.alert(title, message);
 import * as ImagePicker from "expo-image-picker";
 import { uploadPostImage, createPost } from "../../firebase/postsService";
 import { auth } from "../../firebase/firebaseConfig";
@@ -24,7 +28,7 @@ const AddPost = () => {
       await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permissionResult.granted) {
-      Alert.alert("Permission required to access camera roll.");
+      showAlert("Permission required", "Access camera roll.");
       return;
     }
 
@@ -43,7 +47,7 @@ const AddPost = () => {
 
   const handleAddPost = async () => {
     if (!image) {
-      Alert.alert("Please select an image first.");
+      showAlert("Please select an image first.");
       return;
     }
 
@@ -51,13 +55,13 @@ const AddPost = () => {
       const imageUrl = await uploadPostImage(image);
       await createPost(imageUrl, caption);
 
-      Alert.alert("Post added successfully!");
+      showAlert("Success", "Post added successfully!");
 
       setImage(null);
       setCaption("");
     } catch (error) {
       console.error(error);
-      Alert.alert("Error uploading post");
+      showAlert("Error", "Uploading post failed.");
     }
   };
 
