@@ -1,5 +1,8 @@
-import { View, Text, Image, StyleSheet, FlatList, Dimensions } from "react-native";
-import { useEffect, useState } from "react";
+import { View, Text, Image, StyleSheet, FlatList, Dimensions, Pressable, Alert, Platform } from "react-native";
+import { useEffect, useState, useRef } from "react";
+
+const showAlert = (title: string, message?: string) =>
+  Platform.OS === "web" ? window.alert([title, message].filter(Boolean).join("\n")) : Alert.alert(title, message);
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { db, auth } from "../../firebase/firebaseConfig";
 
@@ -11,12 +14,38 @@ const IMAGE_SIZE = (width - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 type Post = {
   id: string;
   imageUrl: string;
+  caption?: string;
   createdAt: { seconds: number };
 };
+
+const DOUBLE_TAP_DELAY = 300;
 
 export default function Profile() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [captionVisibleId, setCaptionVisibleId] = useState<string | null>(null);
+  const lastTapRef = useRef<{ id: string; time: number } | null>(null);
+  const longPressHandledRef = useRef(false);
+
+  const handlePress = (item: Post) => {
+    if (longPressHandledRef.current) {
+      longPressHandledRef.current = false;
+      return;
+    }
+    const now = Date.now();
+    const last = lastTapRef.current;
+    if (last?.id === item.id && now - last.time < DOUBLE_TAP_DELAY) {
+      showAlert("Double tap", "You double tapped this image!");
+      lastTapRef.current = null;
+    } else {
+      lastTapRef.current = { id: item.id, time: now };
+    }
+  };
+
+  const handleLongPress = (item: Post) => {
+    longPressHandledRef.current = true;
+    setCaptionVisibleId((id) => (id === item.id ? null : item.id));
+  };
 
   useEffect(() => {
     const userId = auth.currentUser?.uid;
@@ -51,7 +80,20 @@ export default function Profile() {
   }, []);
 
   const renderItem = ({ item }: { item: Post }) => (
-    <Image source={{ uri: item.imageUrl }} style={styles.gridItem} resizeMode="cover" />
+    <Pressable
+      style={styles.gridItemWrapper}
+      onPress={() => handlePress(item)}
+      onLongPress={() => handleLongPress(item)}
+    >
+      <Image source={{ uri: item.imageUrl }} style={styles.gridItem} resizeMode="cover" />
+      {captionVisibleId === item.id && (
+        <View style={styles.captionOverlay}>
+          <Text style={styles.captionText} numberOfLines={3}>
+            {item.caption || "No caption"}
+          </Text>
+        </View>
+      )}
+    </Pressable>
   );
 
   if (loading) {
@@ -114,8 +156,24 @@ const styles = StyleSheet.create({
     gap: GAP,
     marginBottom: GAP,
   },
+  gridItemWrapper: {
+    width: IMAGE_SIZE,
+    height: IMAGE_SIZE,
+    position: "relative",
+  },
   gridItem: {
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
+  },
+  captionOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    padding: 8,
+  },
+  captionText: {
+    color: "#fff",
+    fontSize: 12,
+    textAlign: "center",
   },
 });
