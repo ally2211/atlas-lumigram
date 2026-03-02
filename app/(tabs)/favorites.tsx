@@ -1,21 +1,65 @@
 import { View, Text, Image, StyleSheet, FlatList, Dimensions, Pressable } from "react-native";
-import { useState } from "react";
-import { favoritesFeed } from "@/placeholder";
+import { useEffect, useState } from "react";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { db, auth } from "../../firebase/firebaseConfig";
 
 const { width } = Dimensions.get("window");
 const NUM_COLUMNS = 3;
 const GAP = 2;
 const IMAGE_SIZE = (width - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 
+type FavoriteItem = {
+  id: string;
+  imageUrl: string;
+  caption?: string;
+};
+
 export default function Favorites() {
+  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [captionVisibleId, setCaptionVisibleId] = useState<string | null>(null);
 
-  const renderItem = ({ item }: { item: (typeof favoritesFeed)[0] }) => (
+  useEffect(() => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    const q = query(
+      collection(db, "users", userId, "favorites"),
+      orderBy("favoritedAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const items = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: data.postId || doc.id,
+            imageUrl: data.imageUrl,
+            caption: data.caption,
+          } as FavoriteItem;
+        });
+        setFavorites(items);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching favorites:", error);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  const renderItem = ({ item }: { item: FavoriteItem }) => (
     <Pressable
       style={styles.gridItemWrapper}
       onLongPress={() => setCaptionVisibleId((id) => (id === item.id ? null : item.id))}
     >
-      <Image source={{ uri: item.image }} style={styles.gridItem} resizeMode="cover" />
+      <Image source={{ uri: item.imageUrl }} style={styles.gridItem} resizeMode="cover" />
       {captionVisibleId === item.id && (
         <View style={styles.captionOverlay}>
           <Text style={styles.captionText} numberOfLines={3}>
@@ -26,7 +70,15 @@ export default function Favorites() {
     </Pressable>
   );
 
-  if (favoritesFeed.length === 0) {
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (favorites.length === 0) {
     return (
       <View style={styles.center}>
         <Text style={styles.emptyText}>No favorites yet</Text>
@@ -36,7 +88,7 @@ export default function Favorites() {
 
   return (
     <FlatList
-      data={favoritesFeed}
+      data={favorites}
       renderItem={renderItem}
       keyExtractor={(item) => item.id}
       numColumns={NUM_COLUMNS}
@@ -53,6 +105,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     backgroundColor: "#fff",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666",
   },
   emptyText: {
     fontSize: 18,

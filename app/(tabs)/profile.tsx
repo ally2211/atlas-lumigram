@@ -1,10 +1,11 @@
 import { View, Text, Image, StyleSheet, FlatList, Dimensions, Pressable, Alert, Platform } from "react-native";
 import { useEffect, useState, useRef } from "react";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { db, auth } from "../../firebase/firebaseConfig";
+import { addToFavorites } from "../../firebase/favoritesService";
 
 const showAlert = (title: string, message?: string) =>
   Platform.OS === "web" ? window.alert([title, message].filter(Boolean).join("\n")) : Alert.alert(title, message);
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
-import { db, auth } from "../../firebase/firebaseConfig";
 
 const { width } = Dimensions.get("window");
 const NUM_COLUMNS = 3;
@@ -26,8 +27,9 @@ export default function Profile() {
   const [captionVisibleId, setCaptionVisibleId] = useState<string | null>(null);
   const lastTapRef = useRef<{ id: string; time: number } | null>(null);
   const longPressHandledRef = useRef(false);
+  const addingFavoriteRef = useRef(false);
 
-  const handlePress = (item: Post) => {
+  const handlePress = async (item: Post) => {
     if (longPressHandledRef.current) {
       longPressHandledRef.current = false;
       return;
@@ -35,8 +37,18 @@ export default function Profile() {
     const now = Date.now();
     const last = lastTapRef.current;
     if (last?.id === item.id && now - last.time < DOUBLE_TAP_DELAY) {
-      showAlert("Double tap", "You double tapped this image!");
       lastTapRef.current = null;
+      if (addingFavoriteRef.current) return;
+      addingFavoriteRef.current = true;
+      try {
+        await addToFavorites(item);
+        showAlert("Added to favorites", "This post has been added to your favorites.");
+      } catch (error) {
+        console.error(error);
+        showAlert("Error", "Could not add to favorites.");
+      } finally {
+        addingFavoriteRef.current = false;
+      }
     } else {
       lastTapRef.current = { id: item.id, time: now };
     }
