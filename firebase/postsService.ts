@@ -65,20 +65,26 @@ export const uploadPostImage = async (imageUri: string): Promise<string> => {
 };
 
 /**
- * Creates a post in Firestore
+ * Creates a post in Firestore. Writes to both:
+ * - users/{userId}/posts (for profile, collection group feed)
+ * - posts (top-level, for feed fallback)
  */
 export const createPost = async (imageUrl: string, caption: string) => {
     const user = auth.currentUser;
 
     if (!user) throw new Error("User not logged in");
 
-    const postsRef = collection(db, "users", user.uid, "posts");
-    console.log("AUTH USER:", auth.currentUser);
-    console.log("UID used:", user?.uid);
-    console.log("postsRef path:", postsRef.path);
-    await addDoc(postsRef, {
+    const postData = {
+        userId: user.uid,
         imageUrl,
         caption,
         createdAt: new Date(),
-    });
+    };
+
+    const userPostsRef = collection(db, "users", user.uid, "posts");
+    const topPostsRef = collection(db, "posts");
+    await Promise.all([
+        addDoc(userPostsRef, { imageUrl, caption, createdAt: postData.createdAt }),
+        addDoc(topPostsRef, postData),
+    ]);
 };
