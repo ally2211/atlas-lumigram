@@ -1,6 +1,6 @@
 import { View, Text, Image, StyleSheet, FlatList, Dimensions, Pressable, Alert, Platform } from "react-native";
 import { useEffect, useState, useRef } from "react";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db, auth } from "../../firebase/firebaseConfig";
 import { addToFavorites } from "../../firebase/favoritesService";
 
@@ -66,29 +66,24 @@ export default function Profile() {
       return;
     }
 
-    const q = query(
-      collection(db, "users", userId, "posts"),
-      orderBy("createdAt", "desc")
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const items = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt,
-        })) as Post[];
+    const fetchPosts = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "users", userId, "posts"));
+        const items = snapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt,
+          })) as Post[];
+        items.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
         setPosts(items);
-        setLoading(false);
-      },
-      (error) => {
+      } catch (error) {
         console.error("Error fetching posts:", error);
+      } finally {
         setLoading(false);
       }
-    );
-
-    return () => unsubscribe();
+    };
+    fetchPosts();
   }, []);
 
   const renderItem = ({ item }: { item: Post }) => (
